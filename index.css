@@ -1,0 +1,40 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100svh;
+    background-color: #222;
+}
+
+#canvas{
+    width: min(100svw, 100svh);
+    height: min(100svw, 100svh);
+    background-color: #333;
+}
+
+header {
+    position: fixed;
+    top: 0;
+    width: min(100svw, 100svh);
+    display: flex;
+    justify-content: space-evenly;
+    background-color: #444;
+    color: #FFF;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: min(100svw, 100svh);
+    display: flex;
+    justify-content: space-evenly;
+    background-color: #444;
+    color: #FFF;
+}
