@@ -47,6 +47,7 @@ class Graph {
         }
 
         for(let i=0;i<this.vertices.length;i++) {
+            // starting with 1 element because of self-edges
             let edgeRow = [0];
             for(let j=0;j<i;j++) {
                 edgeRow.push(0);
@@ -66,6 +67,7 @@ class Graph {
                 index2 = temp;
             }
 
+            // TODO: allow self edges
             if (index1 === index2) {
                 continue
             }
@@ -73,6 +75,7 @@ class Graph {
             let a = this.vertices[index1];
             let b = this.vertices[index2];
 
+            // exclude edges which result in bad graph (edges should cross other edges/vertices)
             if(
                 this.lineIntersectsVertices(a[0], a[1], b[0], b[1]) ||
                 this.lineIntersectsEdges(a[0], a[1], b[0], b[1])
@@ -80,12 +83,14 @@ class Graph {
                 continue;
             }
 
+            // TODO: change to `++` to allow multi edges
             this.edgeMatrix[index1][index2] = 1;
         }
 
         this.v = this.vertices.length;
         this.e = this.edgeMatrix.reduce((a, b) => a + b.reduce((c, d) => c + d), 0);
 
+        // component calculation using depth-first search
         let visited = [];
         let components = [];
         for(let v=0;v<this.vertices.length;v++) {
@@ -118,6 +123,8 @@ class Graph {
         }
 
         this.c = components.length;
+
+        // faces calculation using formula
         this.f = this.c + this.e - this.v + 1;
     }
 
@@ -141,13 +148,7 @@ class Graph {
     }
 
     lineIntersectsVertices(ax, ay, bx, by) {
-        let dx = bx - ax;
-        let dy = by - ay;
-
-        if(dx === 0 && dy === 0) {
-            return false;
-        }
-
+        // bounding-box calculation
         let minX;
         let maxX;
         let minY;
@@ -168,33 +169,27 @@ class Graph {
             maxY = by;
         }
 
-        if(dx === 0) {
-            for(let vertex of this.vertices) {
-                if (vertex[0] === ax && vertex[1] > minY && vertex[1] < maxY) {
-                    return true;
-                }
+        // constant value used in `signedArea` calculation
+        let c = (ax - bx) * (ay + by);
+
+        for(let vertex of this.vertices) {
+            if(
+                // ignore points on edge of line
+                (vertex[0] === ax && vertex[1] === ay) ||
+                (vertex[0] === bx && vertex[1] === by) ||
+                // ignore points outside of bounding-box
+                vertex[0] < minX ||
+                vertex[0] > maxX ||
+                vertex[1] < minY ||
+                vertex[1] > maxY
+            ) {
+                continue
             }
-        } else if(dy === 0) {
-            for(let vertex of this.vertices) {
-                if (vertex[1] === ay && vertex[0] > minX && vertex[0] < maxX) {
-                    return true;
-                }
-            }
-        } else {
-            for(let vertex of this.vertices) {
-                if (vertex[0] <= minX || vertex[0] >= maxX || vertex[1] <= minY || vertex[1] >= maxY) {
-                    continue;
-                }
 
-                let dxv = vertex[0] - ax;
-                let dyv = vertex[1] - ay;
+            let signedArea = (vertex[0] - ax) * (vertex[1] + ay) + (bx - vertex[0]) * (by + vertex[1]) + c;
 
-                let factor1 = dx / dxv;
-                let factor2 = dy / dyv;
-
-                if(Math.abs(factor1 - factor2) < 0.1) {
-                    return true;
-                }
+            if(signedArea === 0) {
+                return true;
             }
         }
 
@@ -206,15 +201,7 @@ class Graph {
         ctxt.scale(RESOLUTION / this.gridSize, RESOLUTION / this.gridSize);
         ctxt.translate(0.5, 0.5);
 
-        ctxt.strokeStyle = "#000";
-        ctxt.fillStyle = "#000";
-        ctxt.lineWidth = 0.01;
-
-        for(let vertex of this.vertices) {
-            ctxt.beginPath();
-            ctxt.arc(vertex[0], vertex[1], 0.05, 0, 2 * Math.PI);
-            ctxt.fill();
-        }
+        ctxt.lineWidth = 0.025;
 
         let edgeIndex = 0;
         for(let i=0;i<this.edgeMatrix.length;i++) {
@@ -235,6 +222,14 @@ class Graph {
 
                 edgeIndex++;
             }
+        }
+
+        ctxt.fillStyle = "#000";
+
+        for(let vertex of this.vertices) {
+            ctxt.beginPath();
+            ctxt.arc(vertex[0], vertex[1], 0.05, 0, 2 * Math.PI);
+            ctxt.fill();
         }
 
         ctxt.restore();
